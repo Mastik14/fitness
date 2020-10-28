@@ -7,29 +7,26 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
   template: `
     <div class="auth-form">
       <form [formGroup]="form" (ngSubmit)="onSubmit()">
-        
         <ng-content select="h1"></ng-content>
 
         <label>
-          <input 
-            type="email" 
+          <input
+            type="email"
             placeholder="Email address"
-            formControlName="email">
+            formControlName="email"
+          />
         </label>
         <label>
-          <input 
-            type="password" 
+          <input
+            type="password"
             placeholder="Enter password"
-            formControlName="password">
+            formControlName="password"
+          />
         </label>
 
-        <div class="error" *ngIf="emailFormat">
-          Invalid email format
-        </div>
+        <div class="error" *ngIf="emailFormat">Invalid email format</div>
 
-        <div class="error" *ngIf="passwordInvalid">
-          Password is required
-        </div>
+        <div class="error" *ngIf="passwordInvalid">Password is required</div>
 
         <ng-content select=".error"></ng-content>
 
@@ -40,24 +37,20 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
         <div class="auth-form__toggle">
           <ng-content select="a"></ng-content>
         </div>
-
       </form>
     </div>
-  `
+  `,
 })
 export class AuthFormComponent {
-
   @Output()
   submitted = new EventEmitter<FormGroup>();
 
   form = this.fb.group({
     email: ['', Validators.email],
-    password: ['', Validators.required]
+    password: ['', Validators.required],
   });
 
-  constructor(
-    private fb: FormBuilder
-  ) {}
+  constructor(private fb: FormBuilder) {}
 
   onSubmit() {
     if (this.form.valid) {
@@ -74,5 +67,4 @@ export class AuthFormComponent {
     const control = this.form.get('email');
     return control.hasError('email') && control.touched;
   }
-
 }

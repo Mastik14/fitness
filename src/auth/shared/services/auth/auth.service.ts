@@ -1,17 +1,80 @@
 import { Injectable } from '@angular/core';
-
-// import { AngularFireAuth } from '@angular/fire/auth';
-// import * as firebase from 'firebase';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { environment } from '../../../../environments/environment';
+import { catchError, tap } from 'rxjs/operators';
+import { User, FbAuthResponse } from '../../interfaces/interfaces';
+import { Observable, Subject, throwError } from 'rxjs';
 
 @Injectable()
 export class AuthService {
-  // constructor(private af: AngularFireAuth) {}
+  public error$: Subject<string> = new Subject<string>();
 
-  // createUser(email: string, password: string): any {
-  //   return this.af.createUserWithEmailAndPassword(email, password);
-  // }
+  constructor(private http: HttpClient) {}
 
-  // loginUser(email: string, password: string) {
-  //   return this.af.signInWithEmailAndPassword(email, password);
-  // }
+  get token(): string {
+    const expDate = new Date(localStorage.getItem('fb-token-exp'));
+    if (new Date() > expDate) {
+      this.logout();
+      return null;
+    }
+    return localStorage.getItem('fb-token');
+  }
+
+  createUser(user: User): Observable<any> {
+    user.returnSecureToken = true;
+    return this.http
+      .post(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${environment.apiKey}`,
+        user
+      )
+      .pipe(catchError(this.handleError.bind(this)));
+  }
+
+  loginUser(user: User): Observable<any> {
+    user.returnSecureToken = true;
+    return this.http
+      .post(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${environment.apiKey}`,
+        user
+      )
+      .pipe(tap(this.setToken), catchError(this.handleError.bind(this)));
+  }
+
+  logout() {
+    this.setToken(null);
+  }
+
+  isAuthenticated(): boolean {
+    return !!this.token;
+  }
+
+  private handleError(error: HttpErrorResponse) {
+    const { message } = error.error.error;
+
+    switch (message) {
+      case 'INVALID_EMAIL':
+        this.error$.next('Invalid email');
+        break;
+      case 'INVALID_PASSWORD':
+        this.error$.next('Invalid password');
+        break;
+      case 'EMAIL_NOT_FOUND':
+        this.error$.next('There is no such email');
+        break;
+    }
+
+    return throwError(error);
+  }
+
+  private setToken(response: FbAuthResponse | null) {
+    if (response) {
+      const expDate = new Date(
+        new Date().getTime() + +response.expiresIn * 1000
+      );
+      localStorage.setItem('fb-token', response.idToken);
+      localStorage.setItem('fb-token-exp', expDate.toString());
+    } else {
+      localStorage.clear();
+    }
+  }
 }
