@@ -24,16 +24,13 @@ export class RegisterComponent {
 
   constructor(private authService: AuthService, private router: Router) {}
 
-  registerUser(event: FormGroup) {
+  async registerUser(event: FormGroup) {
     const { email, password } = event.value;
-
-    const user = {
-      email,
-      password
-    };
-
-    this.authService.createUser(user).subscribe(() => {
+    try {
+      await this.authService.createUser(email, password);
       this.router.navigate(['/']);
-    });
+    } catch (err) {
+      this.error = err.message;
+    }
   }
 }

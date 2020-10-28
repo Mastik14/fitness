@@ -1,7 +1,6 @@
 import { Component } from '@angular/core';
 import { FormGroup } from '@angular/forms';
 import { Router } from '@angular/router';
-import { User } from 'src/auth/shared/interfaces/interfaces';
 
 import { AuthService } from '../../../shared/services/auth/auth.service';
 
@@ -25,15 +24,13 @@ export class LoginComponent {
 
   constructor(private authService: AuthService, private router: Router) {}
 
-  loginUser(event: FormGroup) {
+  async loginUser(event: FormGroup) {
     const { email, password } = event.value;
-    const user: User = {
-      email,
-      password
-    };
-
-    this.authService.loginUser(user).subscribe(() => {
+    try {
+      await this.authService.loginUser(email, password);
       this.router.navigate(['/']);
-    });
+    } catch (err) {
+      this.error = err.message;
+    }
   }
 }

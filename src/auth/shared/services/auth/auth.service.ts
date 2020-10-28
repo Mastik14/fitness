@@ -1,80 +1,45 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { environment } from '../../../../environments/environment';
-import { catchError, tap } from 'rxjs/operators';
-import { User, FbAuthResponse } from '../../interfaces/interfaces';
-import { Observable, Subject, throwError } from 'rxjs';
+
+import { tap } from 'rxjs/operators';
+import { Store } from '../../../../store';
+
+import { AngularFireAuth } from '@angular/fire/auth';
+
+export interface User {
+  email: string;
+  uid: string;
+  authenticated: boolean;
+}
 
 @Injectable()
 export class AuthService {
-  public error$: Subject<string> = new Subject<string>();
+  auth$ = this.af.authState.pipe(
+    tap((next) => {
+      if (!next) {
+        this.store.set('user', null);
+        return;
+      }
+      const user: User = {
+        email: next.email,
+        uid: next.uid,
+        authenticated: true,
+      };
+      this.store.set('user', user);
+    })
+  );
 
-  constructor(private http: HttpClient) {}
+  constructor(private store: Store, private af: AngularFireAuth) {}
 
-  get token(): string {
-    const expDate = new Date(localStorage.getItem('fb-token-exp'));
-    if (new Date() > expDate) {
-      this.logout();
-      return null;
-    }
-    return localStorage.getItem('fb-token');
+  createUser(email: string, password: string) {
+    return this.af.auth.createUserWithEmailAndPassword(email, password);
   }
 
-  createUser(user: User): Observable<any> {
-    user.returnSecureToken = true;
-    return this.http
-      .post(
-        `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${environment.apiKey}`,
-        user
-      )
-      .pipe(catchError(this.handleError.bind(this)));
+  loginUser(email: string, password: string) {
+    return this.af.auth.signInWithEmailAndPassword(email, password);
   }
 
-  loginUser(user: User): Observable<any> {
-    user.returnSecureToken = true;
-    return this.http
-      .post(
-        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${environment.apiKey}`,
-        user
-      )
-      .pipe(tap(this.setToken), catchError(this.handleError.bind(this)));
-  }
-
-  logout() {
-    this.setToken(null);
-  }
-
-  isAuthenticated(): boolean {
-    return !!this.token;
-  }
-
-  private handleError(error: HttpErrorResponse) {
-    const { message } = error.error.error;
-
-    switch (message) {
-      case 'INVALID_EMAIL':
-        this.error$.next('Invalid email');
-        break;
-      case 'INVALID_PASSWORD':
-        this.error$.next('Invalid password');
-        break;
-      case 'EMAIL_NOT_FOUND':
-        this.error$.next('There is no such email');
-        break;
-    }
-
-    return throwError(error);
-  }
-
-  private setToken(response: FbAuthResponse | null) {
-    if (response) {
-      const expDate = new Date(
-        new Date().getTime() + +response.expiresIn * 1000
-      );
-      localStorage.setItem('fb-token', response.idToken);
-      localStorage.setItem('fb-token-exp', expDate.toString());
-    } else {
-      localStorage.clear();
-    }
+  logoutUser() {
+    return this.af.auth.signOut();
   }
 }
+
