@@ -5,6 +5,7 @@ import { RouterModule, Routes } from '@angular/router';
 // third-party modules
 import { AngularFireModule, FirebaseAppConfig } from '@angular/fire';
 import { AngularFireAuthModule } from '@angular/fire/auth';
+import { AngularFireDatabaseModule } from '@angular/fire/database';
 
 // shared modules
 import { SharedModule } from './shared/shared.module';
@@ -36,6 +37,7 @@ export const firebaseConfig: FirebaseAppConfig = {
     RouterModule.forChild(ROUTES),
     AngularFireModule.initializeApp(firebaseConfig),
     AngularFireAuthModule,
+    AngularFireDatabaseModule,
     SharedModule.forRoot()
   ]
 })
